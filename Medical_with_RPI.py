@@ -1307,11 +1307,6 @@ def debug_password(username):
     except Exception as e:
         return {'error': str(e)}
 
-@app.route('/kiosk')
-def kiosk():
-    tray_status = TrayManager.get_tray_status_and_countdown()
-    return render_template('kiosk.html', tray_status=tray_status)
-
 # Main application entry point
 if __name__ == '__main__':
     print("Starting Medical Dispenser...")
