@@ -1,3 +1,4 @@
+/* Improved for touch accessibility and readability, not kiosk-specific */
 body {
     background: linear-gradient(120deg, #e3f2fd 0%, #90caf9 100%);
     min-height: 100vh;
@@ -6,6 +7,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 16px; /* Larger base font for readability */
 }
 
 .container {
@@ -46,13 +48,14 @@ h2 {
 
 .input-group input, .input-group select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 1rem;
     border: 1px solid #bbdefb;
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 1.1rem;
     transition: border 0.2s;
     background: #e3f2fd;
     color: #0d47a1;
+    min-height: 44px;
 }
 
 .input-group input:focus, .input-group select:focus {
@@ -62,12 +65,12 @@ h2 {
 
 .btn {
     width: 100%;
-    padding: 0.75rem;
+    padding: 1rem;
     background: #2196f3;
     color: #fff;
     border: none;
     border-radius: 8px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
@@ -75,25 +78,8 @@ h2 {
     text-decoration: none;
     display: inline-block;
     text-align: center;
-}
-
-/* Ensure anchor tags with btn class don't look like links */
-a.btn {
-    text-decoration: none;
-    color: #fff;
-}
-
-a.btn:hover {
-    text-decoration: none;
-    color: #fff;
-}
-
-a.btn:visited {
-    color: #fff;
-}
-
-a.btn:active {
-    color: #fff;
+    min-height: 48px;
+    min-width: 48px;
 }
 
 .btn.blue {
@@ -102,15 +88,6 @@ a.btn:active {
 
 .btn:hover, .btn.blue:hover {
     background: #1565c0;
-}
-
-.btn.logout {
-    background: #b71c1c;
-    margin-top: 2rem;
-}
-
-.btn.logout:hover {
-    background: #c62828;
 }
 
 .btn.green {
@@ -129,11 +106,22 @@ a.btn:active {
     background: #d32f2f;
 }
 
+.btn.logout {
+    background: #b71c1c;
+    margin-top: 2rem;
+}
+
+.btn.logout:hover {
+    background: #c62828;
+}
+
 .btn.small {
     width: auto;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.7rem 1.2rem;
+    font-size: 1rem;
     margin: 0.25rem;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .switch-link {
@@ -159,10 +147,10 @@ a.btn:active {
 }
 
 .flashes li {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.2rem;
     border-radius: 8px;
     margin-bottom: 0.5rem;
-    font-size: 1rem;
+    font-size: 1.1rem;
 }
 
 .flashes .success {
@@ -178,7 +166,7 @@ a.btn:active {
 .tray-info {
     background: #e3f2fd;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 1.2rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 8px rgba(25, 118, 210, 0.04);
 }
@@ -188,4 +176,36 @@ a.btn:active {
         min-width: 90vw;
         padding: 1.5rem 0.5rem;
     }
+    .btn, .btn.small {
+        font-size: 1.1rem;
+        padding: 0.8rem 1rem;
+    }
+}
+
+/* Ensure anchor tags with btn class don't look like links */
+a.btn {
+    text-decoration: none;
+    color: #fff;
+}
+
+a.btn:hover {
+    text-decoration: none;
+    color: #fff;
+}
+
+a.btn:visited {
+    color: #fff;
+}
+
+a.btn:active {
+    color: #fff;
+}
+
+/* Hide scrollbars for a cleaner look */
+body::-webkit-scrollbar {
+    display: none;
+}
+body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 } 
