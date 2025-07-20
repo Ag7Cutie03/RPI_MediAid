@@ -52,7 +52,6 @@ class DatabaseManager:
             alert BOOLEAN,
             dispense_time DATETIME,
             interval TEXT,
-            color TEXT,
             dispense_count INTEGER DEFAULT 0,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
@@ -272,7 +271,7 @@ class TrayManager:
         return status
 
     @staticmethod
-    def insert_tray_settings(user_id, tray_number, description, dispense_time, interval, color, name=None):
+    def insert_tray_settings(user_id, tray_number, description, dispense_time, interval, name=None):
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
@@ -283,9 +282,9 @@ class TrayManager:
             name = user_result[0] if user_result else "Unknown"
         
         cursor.execute('''
-        INSERT INTO tray_settings (user_id, tray_number, description, dispense_time, interval, color, name)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, tray_number, description, dispense_time, interval, color, name))
+        INSERT INTO tray_settings (user_id, tray_number, description, dispense_time, interval, name)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, tray_number, description, dispense_time, interval, name))
         
         conn.commit()
         conn.close()
@@ -915,7 +914,6 @@ def tray_setup():
         alert = request.form.get('alert') == 'yes'
         dispense_time = request.form['time']
         interval = request.form['interval']
-        color = request.form['color']
         
         # Get username for the name field
         username = session.get('username', 'Unknown')
@@ -928,17 +926,17 @@ def tray_setup():
         if existing_tray_setting:
             cursor.execute('''
             UPDATE tray_settings
-            SET tray_number = ?, description = ?, alert = ?, dispense_time = ?, interval = ?, color = ?, name = ?
+            SET tray_number = ?, description = ?, alert = ?, dispense_time = ?, interval = ?, name = ?
             WHERE user_id = ?
-            ''', (tray_number, description, alert, dispense_time, interval, color, username, user_id))
+            ''', (tray_number, description, alert, dispense_time, interval, username, user_id))
             conn.commit()
             flash('Tray settings updated successfully!', 'success')
         else:
             try:
                 cursor.execute('''
-                INSERT INTO tray_settings (user_id, tray_number, description, alert, dispense_time, interval, color, name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (user_id, tray_number, description, alert, dispense_time, interval, color, username))
+                INSERT INTO tray_settings (user_id, tray_number, description, alert, dispense_time, interval, name)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (user_id, tray_number, description, alert, dispense_time, interval, username))
                 conn.commit()
                 flash('Tray settings saved successfully!', 'success')
             except sqlite3.IntegrityError:
@@ -964,7 +962,7 @@ def save_dispense_settings():
     alert = request.form.get('alert') == 'yes'
     dispense_time = request.form['time']
     interval = request.form['interval']
-    color = request.form['color']
+    
     username = session.get('username', 'Unknown')
     
     conn = sqlite3.connect(DATABASE)
@@ -982,17 +980,17 @@ def save_dispense_settings():
         # Update the existing tray for this user
         cursor.execute('''
         UPDATE tray_settings
-        SET description = ?, alert = ?, dispense_time = ?, interval = ?, color = ?, name = ?
+        SET description = ?, alert = ?, dispense_time = ?, interval = ?, name = ?
         WHERE tray_number = ?
-        ''', (description, alert, dispense_time, interval, color, username, tray_number))
+        ''', (description, alert, dispense_time, interval, username, tray_number))
         conn.commit()
         flash('Tray settings updated successfully!', 'success')
     else:
         try:
             cursor.execute('''
-            INSERT INTO tray_settings (user_id, tray_number, description, alert, dispense_time, interval, color, name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, tray_number, description, alert, dispense_time, interval, color, username))
+            INSERT INTO tray_settings (user_id, tray_number, description, alert, dispense_time, interval, name)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, tray_number, description, alert, dispense_time, interval, username))
             conn.commit()
             flash('Tray settings saved successfully!', 'success')
         except sqlite3.IntegrityError:
@@ -1306,6 +1304,11 @@ def debug_password(username):
             return {'error': 'User not found'}
     except Exception as e:
         return {'error': str(e)}
+
+@app.route('/kiosk')
+def kiosk():
+    tray_status = TrayManager.get_tray_status_and_countdown()
+    return render_template('kiosk.html', tray_status=tray_status)
 
 # Main application entry point
 if __name__ == '__main__':

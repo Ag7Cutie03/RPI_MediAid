@@ -29,16 +29,24 @@ def get_directions_and_speak(brand_name, tray_number=None):
     directions = fetch_fda_instruction(brand_name)
     cleaned = clean_directions(directions)
     try:
+        # Speak tray/medicine message first
+        if tray_number is not None:
+            message = f"Tray {tray_number}: {brand_name} was dispensed. Please take your medicine now."
+            tts = gTTS(text=message, lang='en', slow=False)
+            tts.save("speak.mp3")
+            os.system("mpg123 speak.mp3")
+            os.remove("speak.mp3")
+            time.sleep(3)
         # Speak directions
         tts = gTTS(text=cleaned, lang='en', slow=False)
         tts.save("speak.mp3")
         os.system("mpg123 speak.mp3")
         os.remove("speak.mp3")
-        time.sleep(3)  # <-- Add this line
-        # Speak tray/medicine message 3 times with 10s delay
+        time.sleep(3)
+        # Repeat tray/medicine message 2 more times with 10s delay (total 3 times)
         if tray_number is not None:
             message = f"Tray {tray_number}: {brand_name} was dispensed. Please take your medicine now."
-            for _ in range(3):
+            for _ in range(2):
                 tts = gTTS(text=message, lang='en', slow=False)
                 tts.save("speak.mp3")
                 os.system("mpg123 speak.mp3")
