@@ -21,7 +21,8 @@ body {
     padding: 2.5rem 2rem;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
-    max-width: 1280px;
+    min-width: 1280px;
+    max-width: 400px;
     width: 100%;
     margin: 1rem;
 }
@@ -44,7 +45,7 @@ h2 {
 }
 
 .input-group input, .input-group select {
-    width: 95%;
+    width: 100%;
     padding: 0.75rem;
     border: 1px solid #bbdefb;
     border-radius: 8px;
@@ -60,7 +61,7 @@ h2 {
 }
 
 .btn {
-    width: 98%;
+    width: 100%;
     padding: 0.75rem;
     background: #2196f3;
     color: #fff;
@@ -217,68 +218,16 @@ a.btn:active {
     background: #bbdefb;
 }
 
-/* Responsive layout for mobile devices */
-@media screen and (max-width: 768px) {
-  .container {
-    min-height: unset;
-    width: 100vw;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-  }
-
-  .content-column {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-  }
-
-  .form-box,
-  .dashboard-box,
-  .admin-section,
-  .tray-box {
-    min-width: unset;
-    max-width: 100%;
-    width: 100%;
-    margin: 0 0 20px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    padding: 15px 8px;
-    border-radius: 8px;
-    background: #fff;
-  }
-
-  /* Make tables scrollable horizontally on small screens */
-  table,
-  .medicine-table,
-  .user-table,
-  .tray-table {
-    width: 100%;
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    background: #e3f2fd;
-    border-radius: 8px;
-  }
-
-  table th, table td,
-  .medicine-table th, .medicine-table td,
-  .user-table th, .user-table td,
-  .tray-table th, .tray-table td {
-    white-space: nowrap;
-  }
+@media (max-width: 600px) {
+    .form-box, .dashboard-box {
+        min-width: 90vw;
+        padding: 1.5rem 0.5rem;
+    }
 }
 
-/* Desktop base style for .tray-box */
-.tray-box {
-  background: #fff;
-  padding: 2.5rem 2rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
-  max-width: 1280px;
-  width: 100%;
-  margin: 1rem;
+.content-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
 } 
