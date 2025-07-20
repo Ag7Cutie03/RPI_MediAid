@@ -29,8 +29,8 @@ A web-based smart medical dispenser for Raspberry Pi, designed to automate and t
 ## Installation
 1. **Clone the repository**
    ```bash
-   git clone <repo-url>
-   cd MedDispenser
+   git clone https://github.com/Ag7Cutie03/RPI_MediAid.git
+   cd RPI_MediAid
    ```
 2. **Install Python dependencies**
    ```bash
@@ -74,7 +74,4 @@ A web-based smart medical dispenser for Raspberry Pi, designed to automate and t
   - Ensure Flask server is running and accessible on port 5000
 
 ## License
-MIT License
-
----
-For questions or contributions, open an issue or pull request on GitHub. 
+Non-license open project only.
