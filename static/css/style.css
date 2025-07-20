@@ -21,7 +21,6 @@ body {
     padding: 2.5rem 2rem;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
-    min-width: 1280px;
     max-width: 400px;
     width: 100%;
     margin: 1rem;
@@ -279,7 +278,6 @@ a.btn:active {
   padding: 2.5rem 2rem;
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
-  min-width: 1280px;
   max-width: 400px;
   width: 100%;
   margin: 1rem;
