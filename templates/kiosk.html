@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kiosk Tray Status - MedDispenser</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_kiosk.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_kiosk.css') }}?v=3">
+    <style>
+        html, body, .kiosk-container, .kiosk-tray-box { width:100vw; height:100vh; margin:0; padding:0; background:#fff; overflow:hidden; }
+        .kiosk-tray-box h2 { display:none !important; }
+    </style>
 </head>
 <body>
     <div class="kiosk-container">
