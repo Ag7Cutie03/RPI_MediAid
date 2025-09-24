@@ -6,10 +6,11 @@ html, body {
     padding: 0;
     overflow: hidden;
     background: #ffffff; /* match table background to avoid edge halos */
-    font-size: 12px; /* Compact base font for small display */
+    font-size: 13px; /* Slight bump for readability */
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
 }
+* { box-sizing: border-box; }
 .kiosk-container {
     width: 100vw;
     height: 100vh;
@@ -40,33 +41,34 @@ html, body {
     background: #ffffff;
     border-radius: 0;
     overflow: hidden;
-    font-size: 0.8rem;
+    font-size: 0.82rem; /* ~10.7px on 13px base */
     table-layout: fixed; /* Prevent column overlap */
 }
 .kiosk-medicine-table th, .kiosk-medicine-table td {
-    padding: 0.08rem 0.12rem;
+    padding: 0.06rem 0.1rem;
     text-align: center;
     border-bottom: 1px solid #bbdefb;
     color: #0d47a1;
-    white-space: nowrap;          /* Keep to single line */
+    white-space: nowrap;          /* Keep to single line for equal row heights */
     overflow: hidden;             /* Hide overflow */
     text-overflow: ellipsis;      /* Ellipsis for long text */
+    line-height: 1.2;             /* Avoid text touching borders */
 }
 .kiosk-medicine-table th {
     background: #1976d2;
     color: #fff;
     font-weight: 600;
-    font-size: 0.75rem;
-    padding: 0.1rem 0.12rem;
+    font-size: 0.72rem;
+    padding: 0.08rem 0.1rem;
 }
 .kiosk-medicine-table tr:last-child td {
     border-bottom: none;
 }
 .kiosk-medicine-table tr {
-    height: 1.15rem;
+    height: 1.25rem; /* Fixed uniform row height */
 }
 .kiosk-countdown {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: #388e3c;
     font-variant-numeric: tabular-nums; /* steadier countdown width */
