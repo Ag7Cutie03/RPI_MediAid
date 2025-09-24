@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Unlock System - Medical Dispenser</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .face-unlock-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .unlock-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 20px 0;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+        
+        .unlock-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .unlock-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .emergency-unlock {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .status-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .unlock-history {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .history-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .face-icon {
+            font-size: 48px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .instructions h3 {
+            color: #495057;
+            margin-top: 0;
+        }
+        
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>🔒 Face Unlock System</h1>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('register_face_page') }}" class="nav-link">Register Face</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </nav>
+
+        <div class="face-unlock-container">
+            <div class="instructions">
+                <h3>🔍 Face Recognition Instructions</h3>
+                <ol>
+                    <li>Ensure good lighting on your face</li>
+                    <li>Look directly at the camera</li>
+                    <li>Keep your face centered in the frame</li>
+                    <li>Wait for face detection confirmation</li>
+                    <li>Container will unlock automatically upon successful recognition</li>
+                </ol>
+            </div>
+
+            <div class="face-icon">
+                👤
+            </div>
+
+            <div id="status-message" class="status-message" style="display: none;"></div>
+
+            <button id="unlock-button" class="unlock-button" onclick="unlockContainer()">
+                🔓 Unlock Container with Face Recognition
+            </button>
+
+            {% if session.is_admin %}
+            <button id="emergency-unlock" class="emergency-unlock" onclick="emergencyUnlock()">
+                🚨 Emergency Unlock (Admin Only)
+            </button>
+            {% endif %}
+
+            <div class="unlock-history">
+                <h3>📋 Recent Unlock History</h3>
+                {% if unlock_history %}
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Unlock Time</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in unlock_history %}
+                        <tr>
+                            <td>{{ entry[0] }}</td>
+                            <td>{{ entry[1] }}</td>
+                            <td>{{ entry[2] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="text-align: center; color: #6c757d; font-style: italic;">
+                    No unlock history available
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function unlockContainer() {
+            const button = document.getElementById('unlock-button');
+            button.disabled = true;
+            button.textContent = '🔍 Recognizing Face...';
+            
+            showStatus('Starting face recognition... Please look at the camera.', 'info');
+            
+            fetch('/unlock_container', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    // Refresh page after 3 seconds to update history
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = '🔓 Unlock Container with Face Recognition';
+            });
+        }
+
+        function emergencyUnlock() {
+            if (!confirm('Are you sure you want to perform an emergency unlock? This will bypass face recognition.')) {
+                return;
+            }
+            
+            const button = document.getElementById('emergency-unlock');
+            button.disabled = true;
+            button.textContent = '🚨 Emergency Unlocking...';
+            
+            fetch('/emergency_unlock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    // Refresh page after 3 seconds to update history
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = '🚨 Emergency Unlock (Admin Only)';
+            });
+        }
+    </script>
+</body>
+</html>

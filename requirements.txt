@@ -24,6 +24,12 @@ spidev>=3.6
 # Image Processing and Display
 Pillow>=10.0.0
 
+# Face Recognition and Computer Vision
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+numpy>=1.24.0
+face-recognition>=1.3.0
+
 # =============================================================================
 # System Dependencies (install via apt-get)
 # =============================================================================

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import os, re, time, csv, sqlite3, threading
@@ -9,6 +9,9 @@ import spidev
 # Import RPi servo controller
 from rpi_servo import get_servo_controller, cleanup_servo_controller
 from weblookup import get_directions_and_speak
+
+# Import face unlock system
+from face_unlock_system import face_unlock_system, init_db as init_face_db
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
@@ -760,6 +763,13 @@ class BackgroundDispenser:
 DatabaseManager.init_db()
 DatabaseManager.migrate_passwords()
 
+# Initialize face unlock system
+init_face_db()
+if face_unlock_system.initialize():
+    print("✓ Face unlock system initialized successfully")
+else:
+    print("⚠ Face unlock system initialization failed - face recognition features may not work")
+
 # Import medicine drug information lookup (DrugBank API)
 try:
     from weblookup import get_directions_from_drugs_com
@@ -1244,6 +1254,160 @@ def admin_change_password():
     flash(message, 'success' if success else 'warning' if 'not found' in message else 'danger')
     
     return redirect(url_for('admin_dashboard'))
+
+# Route Handlers - Face Unlock Routes
+@app.route('/face_unlock')
+def face_unlock_page():
+    """Face unlock interface page"""
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'danger')
+        return redirect(url_for('login'))
+    
+    # Get unlock history
+    unlock_history = face_unlock_system.get_unlock_history(10)
+    
+    return render_template('face_unlock.html', unlock_history=unlock_history)
+
+@app.route('/unlock_container', methods=['POST'])
+def unlock_container():
+    """API endpoint to unlock container using face recognition"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not authenticated'})
+    
+    user_id = session['user_id']
+    username = session.get('username', 'Unknown')
+    
+    try:
+        # Perform face unlock
+        success, message = face_unlock_system.unlock_container(user_id=user_id, username=username)
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        })
+
+@app.route('/emergency_unlock', methods=['POST'])
+def emergency_unlock():
+    """Emergency unlock without face recognition (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not authenticated'})
+    
+    is_admin = session.get('is_admin', False)
+    if not is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'})
+    
+    try:
+        username = session.get('username', 'Admin')
+        user_id = session['user_id']
+        
+        # Log the emergency unlock
+        face_unlock_system.log_unlock_event(user_id, f"{username} (Emergency)")
+        
+        # Unlock the container
+        print("Emergency unlock activated by admin")
+        servo_controller.servo1.ChangeDutyCycle(7.5)  # 90 degrees
+        time.sleep(5)
+        servo_controller.servo1.ChangeDutyCycle(2.5)  # 0 degrees
+        time.sleep(0.5)
+        servo_controller.servo1.ChangeDutyCycle(0)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Emergency unlock activated'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        })
+
+@app.route('/register_face')
+def register_face_page():
+    """Face registration page"""
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('register_face.html')
+
+@app.route('/start_face_collection', methods=['POST'])
+def start_face_collection():
+    """Start face collection process"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not authenticated'})
+    
+    username = session.get('username', '')
+    
+    try:
+        # Start face collection in a separate thread
+        def collect_faces():
+            import subprocess
+            result = subprocess.run([
+                'python', 'face_dataset_collection.py', username
+            ], capture_output=True, text=True)
+            return result.returncode == 0
+        
+        # Run face collection
+        success = collect_faces()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Face data collected for {username}. Please run training next.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Face collection failed. Please try again.'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        })
+
+@app.route('/train_faces', methods=['POST'])
+def train_faces():
+    """Train face recognition model"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not authenticated'})
+    
+    try:
+        # Start training in a separate thread
+        def train_model():
+            import subprocess
+            result = subprocess.run([
+                'python', 'face_training.py'
+            ], capture_output=True, text=True)
+            return result.returncode == 0
+        
+        # Run training
+        success = train_model()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Face recognition model trained successfully!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Face training failed. Please check face data.'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        })
 
 # Route Handlers - Utility Routes
 @app.route('/emergency_reset_admin', methods=['GET', 'POST'])

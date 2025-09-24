@@ -137,6 +137,30 @@ a.btn:active {
     background: #d32f2f;
 }
 
+.btn.orange {
+    background: #ff9800;
+}
+
+.btn.orange:hover {
+    background: #f57c00;
+}
+
+.btn.purple {
+    background: #9c27b0;
+}
+
+.btn.purple:hover {
+    background: #7b1fa2;
+}
+
+.btn.cyan {
+    background: #00bcd4;
+}
+
+.btn.cyan:hover {
+    background: #0097a7;
+}
+
 .btn.small {
     width: auto;
     padding: 0.5rem 1rem;

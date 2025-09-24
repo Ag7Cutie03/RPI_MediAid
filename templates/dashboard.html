@@ -53,6 +53,9 @@
                 <p>No tray status found.</p>
                 {% endif %}
                 <a href="{{ url_for('medicine_select') }}" class="btn green">Select/Search Medicine</a>
+                <a href="{{ url_for('tray_setup') }}" class="btn orange">Setup Tray</a>
+                <a href="{{ url_for('face_unlock_page') }}" class="btn purple">🔒 Face Unlock</a>
+                <a href="{{ url_for('register_face_page') }}" class="btn cyan">👤 Register Face</a>
                 {% if is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}" class="btn blue">Admin Dashboard</a>
                 {% endif %}
