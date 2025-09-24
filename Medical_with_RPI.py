@@ -13,6 +13,11 @@ from weblookup import get_directions_and_speak
 # Import face unlock system
 from face_unlock_system import face_unlock_system, init_db as init_face_db
 
+# ILI9341 Display Controller (integrated)
+import cv2
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
 
@@ -20,10 +25,248 @@ DATABASE = 'users.db'
 
 servo_controller = get_servo_controller()  # Create a single instance
 
+class ILI9341Display:
+    """ILI9341 TFT Display Controller - Integrated"""
+    
+    def __init__(self, cs_pin=8, dc_pin=24, rst_pin=25, spi_port=0, spi_device=0):
+        """Initialize ILI9341 display"""
+        self.width = 320
+        self.height = 240
+        self.cs_pin = cs_pin
+        self.dc_pin = dc_pin
+        self.rst_pin = rst_pin
+        self.running = False
+        self.display_thread = None
+        
+        try:
+            # SPI setup
+            self.spi = spidev.SpiDev()
+            self.spi.open(spi_port, spi_device)
+            self.spi.max_speed_hz = 32000000
+            
+            # GPIO setup
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(self.cs_pin, GPIO.OUT)
+            GPIO.setup(self.dc_pin, GPIO.OUT)
+            GPIO.setup(self.rst_pin, GPIO.OUT)
+            
+            # Initialize display
+            self._init_display()
+            print("ILI9341 Display initialized")
+            
+        except Exception as e:
+            print(f"ILI9341 Display initialization failed: {e}")
+            self.spi = None
+    
+    def _init_display(self):
+        """Initialize ILI9341 display"""
+        # Reset display
+        GPIO.output(self.rst_pin, GPIO.HIGH)
+        time.sleep(0.01)
+        GPIO.output(self.rst_pin, GPIO.LOW)
+        time.sleep(0.01)
+        GPIO.output(self.rst_pin, GPIO.HIGH)
+        time.sleep(0.01)
+        
+        # Basic initialization commands
+        init_commands = [
+            (0x01, None),  # Software reset
+            (0x11, None),  # Exit sleep mode
+            (0x3A, [0x55]),  # Pixel format: 16-bit color
+            (0x29, None),  # Display on
+        ]
+        
+        for cmd, data in init_commands:
+            self._write_command(cmd)
+            if data:
+                self._write_data(data)
+            time.sleep(0.01)
+    
+    def _write_command(self, cmd):
+        """Write command to display"""
+        GPIO.output(self.dc_pin, GPIO.LOW)
+        GPIO.output(self.cs_pin, GPIO.LOW)
+        self.spi.xfer2([cmd])
+        GPIO.output(self.cs_pin, GPIO.HIGH)
+    
+    def _write_data(self, data):
+        """Write data to display"""
+        GPIO.output(self.dc_pin, GPIO.HIGH)
+        GPIO.output(self.cs_pin, GPIO.LOW)
+        if isinstance(data, list):
+            self.spi.xfer2(data)
+        else:
+            self.spi.xfer2([data])
+        GPIO.output(self.cs_pin, GPIO.HIGH)
+    
+    def display_camera_feed(self, camera_source=0):
+        """Display live camera feed on ILI9341"""
+        if not self.spi:
+            return None
+            
+        cap = cv2.VideoCapture(camera_source)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        self.running = True
+        
+        def display_loop():
+            while self.running:
+                ret, frame = cap.read()
+                if ret:
+                    # Convert BGR to RGB and resize
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    pil_image = Image.fromarray(frame_rgb)
+                    pil_image = pil_image.resize((self.width, self.height), Image.Resampling.LANCZOS)
+                    
+                    # Convert to RGB565 and display
+                    self._display_image(pil_image)
+                
+                time.sleep(0.033)  # ~30 FPS
+        
+        self.display_thread = threading.Thread(target=display_loop, daemon=True)
+        self.display_thread.start()
+        return cap
+    
+    def display_face_registration_ui(self, face_detected=False, capture_count=0, max_captures=30):
+        """Display face registration UI"""
+        if not self.spi:
+            return
+            
+        # Create UI image
+        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        
+        try:
+            font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+            font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+            font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        except:
+            font_large = font_medium = font_small = ImageFont.load_default()
+        
+        # Title
+        draw.text((10, 10), "Face Registration", fill=(255, 255, 255), font=font_large)
+        
+        # Face detection status
+        if face_detected:
+            draw.text((10, 40), "Face Detected: YES", fill=(0, 255, 0), font=font_medium)
+        else:
+            draw.text((10, 40), "Face Detected: NO", fill=(255, 0, 0), font=font_medium)
+        
+        # Progress bar
+        progress_width = 300
+        progress_height = 20
+        progress_x, progress_y = 10, 70
+        
+        # Background
+        draw.rectangle([progress_x, progress_y, progress_x + progress_width, progress_y + progress_height], 
+                      fill=(50, 50, 50), outline=(100, 100, 100))
+        
+        # Progress fill
+        progress = capture_count / max_captures
+        fill_width = int(progress_width * progress)
+        if fill_width > 0:
+            draw.rectangle([progress_x, progress_y, progress_x + fill_width, progress_y + progress_height], 
+                          fill=(0, 255, 0))
+        
+        # Progress text
+        progress_text = f"{capture_count}/{max_captures}"
+        draw.text((progress_x + progress_width//2 - 20, progress_y + 25), progress_text, 
+                 fill=(255, 255, 255), font=font_small)
+        
+        # Instructions
+        instructions = ["Position your face", "in front of camera", "and look directly", "at the display"]
+        y_pos = 110
+        for instruction in instructions:
+            draw.text((10, y_pos), instruction, fill=(200, 200, 200), font=font_small)
+            y_pos += 20
+        
+        self._display_image(image)
+    
+    def display_message(self, message, color=(255, 255, 255), bg_color=(0, 0, 0)):
+        """Display a message on screen"""
+        if not self.spi:
+            return
+            
+        image = Image.new('RGB', (self.width, self.height), bg_color)
+        draw = ImageDraw.Draw(image)
+        
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+        except:
+            font = ImageFont.load_default()
+        
+        # Center the text
+        bbox = draw.textbbox((0, 0), message, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        x = (self.width - text_width) // 2
+        y = (self.height - text_height) // 2
+        
+        draw.text((x, y), message, fill=color, font=font)
+        self._display_image(image)
+    
+    def _display_image(self, image):
+        """Display PIL Image on screen"""
+        if not self.spi:
+            return
+            
+        # Convert to RGB565 format
+        rgb565_data = self._convert_to_rgb565(image)
+        
+        # Set full screen area
+        self._set_display_area(0, 0, self.width - 1, self.height - 1)
+        
+        # Write pixel data
+        GPIO.output(self.dc_pin, GPIO.HIGH)
+        GPIO.output(self.cs_pin, GPIO.LOW)
+        self.spi.xfer2(rgb565_data)
+        GPIO.output(self.cs_pin, GPIO.HIGH)
+    
+    def _set_display_area(self, x_start, y_start, x_end, y_end):
+        """Set display area for pixel data"""
+        self._write_command(0x2A)
+        self._write_data([x_start >> 8, x_start & 0xFF, x_end >> 8, x_end & 0xFF])
+        self._write_command(0x2B)
+        self._write_data([y_start >> 8, y_start & 0xFF, y_end >> 8, y_end & 0xFF])
+        self._write_command(0x2C)
+    
+    def _convert_to_rgb565(self, image):
+        """Convert PIL image to RGB565 format"""
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        pixels = list(image.getdata())
+        rgb565_data = []
+        for r, g, b in pixels:
+            rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            rgb565_data.extend([rgb565 >> 8, rgb565 & 0xFF])
+        
+        return rgb565_data
+    
+    def stop_camera_feed(self):
+        """Stop camera feed display"""
+        self.running = False
+        if self.display_thread:
+            self.display_thread.join(timeout=1.0)
+    
+    def cleanup(self):
+        """Cleanup display resources"""
+        self.stop_camera_feed()
+        if self.spi:
+            self.spi.close()
+        print("ILI9341 Display cleaned up")
+
+# Create display controller instance
+display_controller = ILI9341Display()
+
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully"""
     print(f"\nReceived signal {signum}. Shutting down gracefully...")
     cleanup_servo_controller(servo_controller)
+    if display_controller:
+        display_controller.cleanup()
     sys.exit(0)
 
 class DatabaseManager:
@@ -813,9 +1056,74 @@ def register():
             flash('Username already exists', 'danger')
         else:
             success, message = AuthenticationManager.register_user(username, password)
-            flash(message, 'success' if success else 'danger')
             if success:
-                return redirect(url_for('login'))
+                # Handle face images if provided
+                face_images = request.files.getlist('face_images')
+                if face_images and any(img.filename for img in face_images):
+                    try:
+                        # Get the newly created user ID
+                        new_user = DatabaseManager.query_db('SELECT * FROM users WHERE username = ?', (username,), one=True)
+                        if new_user:
+                            user_id = new_user[0]
+                            
+                            # Create face dataset directory
+                            dataset_dir = 'face_dataset'
+                            if not os.path.exists(dataset_dir):
+                                os.makedirs(dataset_dir)
+                            
+                            # Save face images
+                            saved_count = 0
+                            for i, img in enumerate(face_images):
+                                if img.filename:  # Check if file was actually uploaded
+                                    filename = f"User.{user_id}.{i+1}.jpg"
+                                    filepath = os.path.join(dataset_dir, filename)
+                                    img.save(filepath)
+                                    saved_count += 1
+                            
+                            if saved_count > 0:
+                                flash(f'Registration successful! {saved_count} face images captured. Please log in.', 'success')
+                                
+                                # Automatically train the model if we have enough images
+                                if saved_count >= 10:
+                                    try:
+                                        # Run face training in background
+                                        import subprocess
+                                        import threading
+                                        
+                                        def train_model():
+                                            try:
+                                                result = subprocess.run([
+                                                    'python', 'face_recognition/face_training.py'
+                                                ], capture_output=True, text=True, cwd='.')
+                                                if result.returncode == 0:
+                                                    print(f"Face training completed for user {username}")
+                                                else:
+                                                    print(f"Face training failed for user {username}: {result.stderr}")
+                                            except Exception as e:
+                                                print(f"Error training face model: {e}")
+                                        
+                                        # Start training in background thread
+                                        training_thread = threading.Thread(target=train_model, daemon=True)
+                                        training_thread.start()
+                                        
+                                        flash('Face recognition model is being trained in the background.', 'info')
+                                    except Exception as e:
+                                        print(f"Error starting face training: {e}")
+                                        flash('Face images saved, but training failed. You can train manually later.', 'warning')
+                            else:
+                                flash('Registration successful! Please log in.', 'success')
+                        else:
+                            flash('Registration successful! Please log in.', 'success')
+                    except Exception as e:
+                        print(f"Error saving face images: {e}")
+                        flash('Registration successful, but face images could not be saved. Please log in.', 'warning')
+                else:
+                    flash('Registration successful! Please log in.', 'success')
+                
+                if success:
+                    return redirect(url_for('login'))
+            else:
+                flash(message, 'danger')
     return render_template('register.html')
 
 @app.route('/logout')
@@ -1474,6 +1782,71 @@ def kiosk():
     tray_status = TrayManager.get_tray_status_and_countdown()
     return render_template('kiosk.html', tray_status=tray_status)
 
+@app.route('/test_face_capture')
+def test_face_capture():
+    """Test route to verify face capture functionality"""
+    return render_template('register.html')
+
+@app.route('/start_camera_display')
+def start_camera_display():
+    """Start camera feed on ILI9341 display"""
+    try:
+        if display_controller:
+            display_controller.display_camera_feed()
+            return jsonify({'success': True, 'message': 'Camera feed started on display'})
+        else:
+            return jsonify({'success': False, 'message': 'Display controller not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@app.route('/stop_camera_display')
+def stop_camera_display():
+    """Stop camera feed on ILI9341 display"""
+    try:
+        if display_controller:
+            display_controller.stop_camera_feed()
+            return jsonify({'success': True, 'message': 'Camera feed stopped'})
+        else:
+            return jsonify({'success': False, 'message': 'Display controller not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@app.route('/display_face_ui')
+def display_face_ui():
+    """Display face registration UI on ILI9341"""
+    try:
+        if display_controller:
+            face_detected = request.args.get('face_detected', 'false').lower() == 'true'
+            capture_count = int(request.args.get('capture_count', 0))
+            max_captures = int(request.args.get('max_captures', 30))
+            
+            display_controller.display_face_registration_ui(face_detected, capture_count, max_captures)
+            return jsonify({'success': True, 'message': 'Face UI displayed'})
+        else:
+            return jsonify({'success': False, 'message': 'Display controller not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@app.route('/display_message')
+def display_message():
+    """Display a message on ILI9341"""
+    try:
+        if display_controller:
+            message = request.args.get('message', 'Hello')
+            color = request.args.get('color', '255,255,255')
+            bg_color = request.args.get('bg_color', '0,0,0')
+            
+            # Parse color strings
+            color_tuple = tuple(map(int, color.split(',')))
+            bg_color_tuple = tuple(map(int, bg_color.split(',')))
+            
+            display_controller.display_message(message, color_tuple, bg_color_tuple)
+            return jsonify({'success': True, 'message': 'Message displayed'})
+        else:
+            return jsonify({'success': False, 'message': 'Display controller not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
 # Main application entry point
 if __name__ == '__main__':
     print("Starting Medical Dispenser...")
@@ -1505,3 +1878,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\nShutting down Medical Dispenser...")
         cleanup_servo_controller(servo_controller)
+        if display_controller:
+            display_controller.cleanup()
