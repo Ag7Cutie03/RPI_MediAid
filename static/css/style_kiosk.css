@@ -6,7 +6,7 @@ html, body {
     padding: 0;
     overflow: hidden;
     background: #ffffff; /* match table background to avoid edge halos */
-    font-size: 13px; /* Slight bump for readability */
+    font-size: 15px; /* Bigger for ILI9341 readability */
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
 }
@@ -41,34 +41,32 @@ html, body {
     background: #ffffff;
     border-radius: 0;
     overflow: hidden;
-    font-size: 0.82rem; /* ~10.7px on 13px base */
+    font-size: 0.9rem; /* readable body cells */
     table-layout: fixed; /* Prevent column overlap */
 }
 .kiosk-medicine-table th, .kiosk-medicine-table td {
-    padding: 0.06rem 0.1rem;
+    padding: 0.1rem 0.14rem;
     text-align: center;
     border-bottom: 1px solid #bbdefb;
     color: #0d47a1;
     white-space: nowrap;          /* Keep to single line for equal row heights */
     overflow: hidden;             /* Hide overflow */
     text-overflow: ellipsis;      /* Ellipsis for long text */
-    line-height: 1.2;             /* Avoid text touching borders */
+    line-height: 1.25;            /* Avoid text touching borders */
 }
 .kiosk-medicine-table th {
     background: #1976d2;
     color: #fff;
     font-weight: 600;
-    font-size: 0.72rem;
-    padding: 0.08rem 0.1rem;
+    font-size: 0.82rem; /* larger headers */
+    padding: 0.1rem 0.12rem;
 }
 .kiosk-medicine-table tr:last-child td {
     border-bottom: none;
 }
-.kiosk-medicine-table tr {
-    height: 1.25rem; /* Fixed uniform row height */
-}
+.kiosk-medicine-table tr { height: 1.45rem; }
 .kiosk-countdown {
-    font-size: 0.82rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: #388e3c;
     font-variant-numeric: tabular-nums; /* steadier countdown width */
@@ -76,15 +74,15 @@ html, body {
 /* Fixed column widths for 3-column layout (Tray, Med, CD) */
 .kiosk-medicine-table th:nth-child(1),
 .kiosk-medicine-table td:nth-child(1) { /* Tray */
-    width: 16%;
+    width: 18%;
 }
 .kiosk-medicine-table th:nth-child(2),
 .kiosk-medicine-table td:nth-child(2) { /* Med */
-    width: 54%;
+    width: 50%;
 }
 .kiosk-medicine-table th:nth-child(3),
 .kiosk-medicine-table td:nth-child(3) { /* CD */
-    width: 30%;
+    width: 32%;
 }
 button, .btn, input[type="button"], input[type="submit"] {
     min-width: 36px;
