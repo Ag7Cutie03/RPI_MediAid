@@ -20,8 +20,6 @@
                     <tr>
                         <th>Tray</th>
                         <th>Med</th>
-                        <th>Next</th>
-                        <th>Ct</th>
                         <th>CD</th>
                     </tr>
                 </thead>
@@ -30,8 +28,6 @@
                     <tr>
                         <td>{{ tray.tray_number }}</td>
                         <td>{{ tray.description }}</td>
-                        <td>{{ tray.next_dispense }}</td>
-                        <td>{{ tray.dispense_count }}/30</td>
                         <td><span class="kiosk-countdown" data-seconds="{{ tray.countdown }}">{{ tray.countdown }}</span></td>
                     </tr>
                     {% endfor %}

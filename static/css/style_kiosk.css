@@ -73,26 +73,18 @@ html, body {
     color: #388e3c;
     font-variant-numeric: tabular-nums; /* steadier countdown width */
 }
-/* Fixed column widths to ensure no overlap (Tray, Med, Next, Ct, CD) */
+/* Fixed column widths for 3-column layout (Tray, Med, CD) */
 .kiosk-medicine-table th:nth-child(1),
 .kiosk-medicine-table td:nth-child(1) { /* Tray */
-    width: 10%;
+    width: 16%;
 }
 .kiosk-medicine-table th:nth-child(2),
 .kiosk-medicine-table td:nth-child(2) { /* Med */
-    width: 38%;
+    width: 54%;
 }
 .kiosk-medicine-table th:nth-child(3),
-.kiosk-medicine-table td:nth-child(3) { /* Next */
-    width: 22%;
-}
-.kiosk-medicine-table th:nth-child(4),
-.kiosk-medicine-table td:nth-child(4) { /* Ct */
-    width: 12%;
-}
-.kiosk-medicine-table th:nth-child(5),
-.kiosk-medicine-table td:nth-child(5) { /* CD */
-    width: 18%; /* ensure countdown seconds fit */
+.kiosk-medicine-table td:nth-child(3) { /* CD */
+    width: 30%;
 }
 button, .btn, input[type="button"], input[type="submit"] {
     min-width: 36px;
