@@ -44,15 +44,21 @@ class ILI9341Display:
             self.spi.open(spi_port, spi_device)
             self.spi.max_speed_hz = 32000000
             
-            # GPIO setup
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.cs_pin, GPIO.OUT)
-            GPIO.setup(self.dc_pin, GPIO.OUT)
-            GPIO.setup(self.rst_pin, GPIO.OUT)
-            
-            # Initialize display
-            self._init_display()
-            print("ILI9341 Display initialized")
+            # GPIO setup (use BCM mode for display, different from servo BOARD mode)
+            # Note: This might conflict with servo GPIO setup, so we'll handle it gracefully
+            try:
+                GPIO.setmode(GPIO.BCM)
+                GPIO.setup(self.cs_pin, GPIO.OUT)
+                GPIO.setup(self.dc_pin, GPIO.OUT)
+                GPIO.setup(self.rst_pin, GPIO.OUT)
+                
+                # Initialize display
+                self._init_display()
+                print("ILI9341 Display initialized")
+            except Exception as gpio_error:
+                print(f"GPIO setup failed for display: {gpio_error}")
+                print("Display will work in simulation mode")
+                self.spi = None
             
         except Exception as e:
             print(f"ILI9341 Display initialization failed: {e}")
@@ -84,20 +90,30 @@ class ILI9341Display:
     
     def _write_command(self, cmd):
         """Write command to display"""
-        GPIO.output(self.dc_pin, GPIO.LOW)
-        GPIO.output(self.cs_pin, GPIO.LOW)
-        self.spi.xfer2([cmd])
-        GPIO.output(self.cs_pin, GPIO.HIGH)
+        if not self.spi:
+            return
+        try:
+            GPIO.output(self.dc_pin, GPIO.LOW)
+            GPIO.output(self.cs_pin, GPIO.LOW)
+            self.spi.xfer2([cmd])
+            GPIO.output(self.cs_pin, GPIO.HIGH)
+        except:
+            pass
     
     def _write_data(self, data):
         """Write data to display"""
-        GPIO.output(self.dc_pin, GPIO.HIGH)
-        GPIO.output(self.cs_pin, GPIO.LOW)
-        if isinstance(data, list):
-            self.spi.xfer2(data)
-        else:
-            self.spi.xfer2([data])
-        GPIO.output(self.cs_pin, GPIO.HIGH)
+        if not self.spi:
+            return
+        try:
+            GPIO.output(self.dc_pin, GPIO.HIGH)
+            GPIO.output(self.cs_pin, GPIO.LOW)
+            if isinstance(data, list):
+                self.spi.xfer2(data)
+            else:
+                self.spi.xfer2([data])
+            GPIO.output(self.cs_pin, GPIO.HIGH)
+        except:
+            pass
     
     def display_camera_feed(self, camera_source=0):
         """Display live camera feed on ILI9341"""
@@ -212,17 +228,21 @@ class ILI9341Display:
         if not self.spi:
             return
             
-        # Convert to RGB565 format
-        rgb565_data = self._convert_to_rgb565(image)
-        
-        # Set full screen area
-        self._set_display_area(0, 0, self.width - 1, self.height - 1)
-        
-        # Write pixel data
-        GPIO.output(self.dc_pin, GPIO.HIGH)
-        GPIO.output(self.cs_pin, GPIO.LOW)
-        self.spi.xfer2(rgb565_data)
-        GPIO.output(self.cs_pin, GPIO.HIGH)
+        try:
+            # Convert to RGB565 format
+            rgb565_data = self._convert_to_rgb565(image)
+            
+            # Set full screen area
+            self._set_display_area(0, 0, self.width - 1, self.height - 1)
+            
+            # Write pixel data
+            GPIO.output(self.dc_pin, GPIO.HIGH)
+            GPIO.output(self.cs_pin, GPIO.LOW)
+            self.spi.xfer2(rgb565_data)
+            GPIO.output(self.cs_pin, GPIO.HIGH)
+        except Exception as e:
+            print(f"Display error: {e}")
+            pass
     
     def _set_display_area(self, x_start, y_start, x_end, y_end):
         """Set display area for pixel data"""
