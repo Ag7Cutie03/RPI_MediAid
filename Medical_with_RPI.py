@@ -7,7 +7,7 @@ import signal
 import spidev
 
 # Import RPi servo controller
-from rpi_servo import get_servo_controller, cleanup_servo_controller
+from rpi_servo import get_servo_controller, cleanup_servo_controller, force_cleanup_gpio
 from weblookup import get_directions_and_speak
 
 # Import face unlock system
@@ -22,6 +22,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
 
 DATABASE = 'users.db'
+
+# Force cleanup any existing GPIO state before starting
+print("Cleaning up any existing GPIO state...")
+force_cleanup_gpio()
 
 servo_controller = get_servo_controller()  # Create a single instance
 
